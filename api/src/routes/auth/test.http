@@ -1,0 +1,52 @@
+@baseUrl = http://localhost:8000
+@token = <TOKEN>
+@email = kez@test.com
+@password = password123
+
+### Initialize
+GET {{baseUrl}}/auth/initialize
+x-auth-token: {{token}}
+
+### Register
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "first_name": "Kez",
+  "last_name": "Test",
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Resend OTP
+POST {{baseUrl}}/auth/resend-otp
+x-auth-token: {{token}}
+
+### Confirm Email
+POST {{baseUrl}}/auth/confirm-email
+x-auth-token: {{token}}
+Content-Type: application/json
+
+{
+  "otp": "123456"
+}
+
+### Forgot Password
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "{{email}}"
+}
+
+### Reset Password
+POST {{baseUrl}}/auth/reset-password/RESET_TOKE

@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "types": ["node"],
+    "baseUrl": ".",
+    "rootDir": ".",
+    "paths": {
+      "@src/*": ["src/*"]
+    },
+    "outDir": "dist",
+    "sourceMap": true
+  },
+  "include": ["src", "worker.ts", "api.ts", "drizzle.config.ts"],
+  "exclude": ["dist", "node_modules"]
+}
