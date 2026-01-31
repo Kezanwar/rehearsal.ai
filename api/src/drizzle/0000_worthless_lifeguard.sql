@@ -27,17 +27,27 @@ CREATE TABLE "sessions" (
 	"uuid" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_uuid" uuid NOT NULL,
 	"title" text,
-	"audio_url" text,
 	"duration" integer,
-	"latitude" text,
-	"longitude" text,
 	"location_name" text,
+	"audio_url" text,
+	"local_uri" text,
 	"status" text DEFAULT 'pending' NOT NULL,
 	"segments" jsonb,
 	"transcript" jsonb,
 	"transcript_text" text,
 	"summary" text,
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"share_id" text,
+	"share_mode" text,
+	"share_password" text,
+	"share_emails" jsonb,
+	"expires_at" timestamp NOT NULL,
+	"s3_deleted" boolean DEFAULT false NOT NULL,
+	"expiry_reminder_sent_14d" boolean DEFAULT false NOT NULL,
+	"expiry_reminder_sent_7d" boolean DEFAULT false NOT NULL,
+	"last_exported_at" timestamp,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "sessions_share_id_unique" UNIQUE("share_id")
 );
 --> statement-breakpoint
 CREATE TABLE "users" (

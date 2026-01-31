@@ -1,5 +1,5 @@
 {
-  "id": "0ba0de76-12c0-4808-8938-c9f1ef9327d0",
+  "id": "a80e950b-9411-4214-9cb5-d48c96b8415c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -210,32 +210,26 @@
           "primaryKey": false,
           "notNull": false
         },
-        "audio_url": {
-          "name": "audio_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "duration": {
           "name": "duration",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
-        "latitude": {
-          "name": "latitude",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "longitude": {
-          "name": "longitude",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "location_name": {
           "name": "location_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "audio_url": {
+          "name": "audio_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "local_uri": {
+          "name": "local_uri",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -271,8 +265,72 @@
           "primaryKey": false,
           "notNull": false
         },
+        "share_id": {
+          "name": "share_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "share_mode": {
+          "name": "share_mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "share_password": {
+          "name": "share_password",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "share_emails": {
+          "name": "share_emails",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "s3_deleted": {
+          "name": "s3_deleted",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "expiry_reminder_sent_14d": {
+          "name": "expiry_reminder_sent_14d",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "expiry_reminder_sent_7d": {
+          "name": "expiry_reminder_sent_7d",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "last_exported_at": {
+          "name": "last_exported_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
@@ -296,7 +354,15 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "sessions_share_id_unique": {
+          "name": "sessions_share_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "share_id"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
