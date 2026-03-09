@@ -4,9 +4,8 @@ export default function AuthLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
-      <Stack.Screen name="register" />
-      <Stack.Screen name="verify-otp" />
-      <Stack.Screen name="forgot-password" />
+      <Stack.Screen name="AUTH_EMAIL" />
+      <Stack.Screen name="AUTH_OTP" />
     </Stack>
   );
 }

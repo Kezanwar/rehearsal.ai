@@ -7,7 +7,7 @@ import { View } from "react-native";
 
 import { ColorSchemeProvider, useColorScheme } from "@/lib/color-scheme";
 import { NAV_THEME } from "@/lib/theme";
-import { AuthInitializer } from "@/components/auth-initializer";
+import { AuthInitializer } from "@/components/hocs/auth-initializer";
 import { useLoadFonts } from "@/hooks/use-load-fonts";
 
 function RootLayoutNav() {

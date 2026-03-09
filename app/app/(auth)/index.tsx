@@ -1,28 +1,96 @@
 import { View } from "react-native";
-import { Href, Link } from "expo-router";
+import { router, Href } from "expo-router";
 import { Text } from "@/components/ui/text";
+import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/logo";
+import Svg, { Path } from "react-native-svg";
+import { Apple, AtSign } from "lucide-react-native";
+import { useColorScheme } from "@/lib/color-scheme";
+import { ACCENT, THEME } from "@/lib/theme";
 
-export default function LoginScreen() {
+function GoogleIcon({ size = 20 }: { size?: number }) {
   return (
-    <View className="flex-1 items-center justify-center bg-background p-6">
-      <Text variant={"h1"}>Rehearsal.AI</Text>
-      <Text variant={"muted"}>Sign in to continue</Text>
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+        fill="#4285F4"
+      />
+      <Path
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+        fill="#34A853"
+      />
+      <Path
+        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+        fill="#FBBC05"
+      />
+      <Path
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+        fill="#EA4335"
+      />
+    </Svg>
+  );
+}
 
-      {/* TODO: Add login form */}
-      <View className="my-8 flex-row items-center gap-2">
-        <Text variant={"muted"}>Dont have an account?</Text>
-        <Link href={"/register" as Href}>
-          <Text>Sign up</Text>
-        </Link>
+export default function AuthHomeScreen() {
+  const handleApple = () => {
+    // TODO: Implement Apple Sign In
+  };
+
+  const handleGoogle = () => {
+    // TODO: Implement Google Sign In
+  };
+
+  const handleEmail = () => {
+    router.push("/email" as Href);
+  };
+
+  const { colorScheme } = useColorScheme();
+
+  return (
+    <View className="flex-1 bg-background p-6">
+      <View className="my-20 justify-center items-center">
+        <Logo size="lg" />
+        <Text className="text-muted-foreground mt-4 text-center">
+          Record rehearsals, get AI transcriptions,{"\n"}and share with your
+          band.
+        </Text>
       </View>
 
-      <Text style={{ fontFamily: "Manrope-Bold" }}>This should be BOLD</Text>
-      <Text className="font-sans-bold text-foreground">
-        Tailwind should be BOLD
-      </Text>
-      <Text style={{ fontFamily: "InvalidFont" }}>
-        This will fallback to system
-      </Text>
+      <View className="gap-3 pb-12">
+        <Button
+          variant="outline"
+          className="h-12 flex-row gap-3"
+          onPress={handleApple}
+        >
+          <Apple
+            size={18}
+            color={
+              colorScheme === "dark" ? THEME[colorScheme].foreground : "grey"
+            }
+          />
+          <Text className="font-semi-bold">Continue with Apple</Text>
+        </Button>
+
+        <Button
+          variant="outline"
+          className="h-12 flex-row gap-3"
+          onPress={handleGoogle}
+        >
+          <View className="ml-2">
+            <GoogleIcon size={18} />
+          </View>
+          <Text className="font-semi-bold">Continue with Google</Text>
+        </Button>
+
+        <Button
+          variant="outline"
+          className="h-12 flex-row gap-3"
+          onPress={handleEmail}
+        >
+          <AtSign color={ACCENT} size={18} />
+          <Text className="font-semi-bold">Continue with Email</Text>
+        </Button>
+      </View>
     </View>
   );
 }
