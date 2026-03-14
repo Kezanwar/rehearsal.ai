@@ -17,7 +17,7 @@ const fastify = Fastify({
 fastify.register(userPlugin);
 fastify.setErrorHandler(errorHandler);
 
-fastify.register(authRoutes, { prefix: "/auth" });
+fastify.register(authRoutes, { prefix: "/api/auth" });
 
 fastify.get("/", async function handler(request, reply) {
   return { message: "Rehearsal.AI API Up and Running!" };

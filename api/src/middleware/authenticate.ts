@@ -19,12 +19,12 @@ export async function authenticate(
   try {
     const decoded = Auth.verifyToken(token);
 
-    let user = UserCache.get(decoded.user_uuid);
+    let user = UserCache.get(decoded.uuid);
 
     if (!user) {
       user =
         (await db.query.users.findFirst({
-          where: eq(users.uuid, decoded.user_uuid),
+          where: eq(users.uuid, decoded.uuid),
         })) ?? undefined;
 
       if (!user) {

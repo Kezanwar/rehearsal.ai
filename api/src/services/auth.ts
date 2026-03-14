@@ -16,12 +16,8 @@ export class Auth {
     return jwt.sign(payload, JWT_SECRET, { expiresIn });
   }
 
-  static createAccessToken(userUuid: string) {
-    return this.signToken({ user_uuid: userUuid }, "30d");
-  }
-
   static createLongAccessToken(userUuid: string) {
-    return this.signToken({ user_uuid: userUuid }, "365d");
+    return this.signToken({ uuid: userUuid }, "365d");
   }
 
   static createResetToken(email: string) {
@@ -30,7 +26,7 @@ export class Auth {
 
   // JWT verify
   static verifyToken(token: string) {
-    return jwt.verify(token, JWT_SECRET) as { user_uuid: string };
+    return jwt.verify(token, JWT_SECRET) as { uuid: string };
   }
 
   // Password

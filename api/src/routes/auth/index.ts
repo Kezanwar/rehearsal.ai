@@ -7,16 +7,13 @@ import { authenticate } from "@src/middleware/authenticate";
 import UserCache from "@src/cache/user";
 import { Auth, AUTH_METHODS } from "@src/services/auth";
 import {
-  registerSchema,
-  loginSchema,
+  emailAuthSchema,
+  verifyOtpSchema,
   googleAuthSchema,
   appleAuthSchema,
-  confirmEmailSchema,
-  forgotPasswordSchema,
-  changePasswordSchema,
   pushTokenSchema,
 } from "@src/schemas/auth";
-// import { sendOTPEmail, sendPasswordResetEmail } from "@src/services/email";
+// import { sendOTPEmail } from "@src/services/email";
 
 const capitalise = (str: string) =>
   str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -36,83 +33,149 @@ export async function authRoutes(fastify: FastifyInstance) {
     },
   );
 
-  // POST /auth/register
-  fastify.post("/register", async (request) => {
-    const body = registerSchema.parse(request.body);
+  // POST /auth/email
+  // Handles both new and existing users
+  // Always generates new OTP and sets email_confirmed to false
+  fastify.post("/email", async (request) => {
+    const body = emailAuthSchema.parse(request.body);
 
-    const existing = await db.query.users.findFirst({
+    let user = await db.query.users.findFirst({
       where: eq(users.email, body.email.toLowerCase()),
     });
 
-    if (existing) {
-      return Errors.badRequest("User already exists");
+    const otp = Auth.createOTP();
+    let isNewUser = false;
+
+    if (user) {
+      // Existing user - check they're using email auth
+      if (!Auth.isEmailAuth(user.auth_method)) {
+        return Errors.badRequest(
+          `This email is registered with ${user.auth_method}. Please use "Continue with ${user.auth_method === AUTH_METHODS.GOOGLE ? "Google" : "Apple"}" instead.`,
+        );
+      }
+
+      // update OTP
+      [user] = await db
+        .update(users)
+        .set({
+          auth_otp: otp,
+        })
+        .where(eq(users.uuid, user.uuid))
+        .returning();
+    } else {
+      // New user - create account
+      isNewUser = true;
+      [user] = await db
+        .insert(users)
+        .values({
+          first_name: "", // Will be filled in after OTP verification
+          last_name: "",
+          email: body.email.toLowerCase(),
+          auth_method: AUTH_METHODS.EMAIL,
+          auth_otp: otp,
+        })
+        .returning();
     }
 
-    const hashedPassword = await Auth.hashPassword(body.password);
-    const otp = Auth.createOTP();
-
-    const [user] = await db
-      .insert(users)
-      .values({
-        first_name: capitalise(body.first_name),
-        last_name: capitalise(body.last_name),
-        email: body.email.toLowerCase(),
-        password: hashedPassword,
-        auth_method: AUTH_METHODS.EMAIL,
-        auth_otp: otp,
-        email_confirmed: false,
-      })
-      .returning();
-
     if (!user) {
-      return Errors.internal("Failed to create user");
+      return Errors.internal("Failed to process authentication");
     }
 
     UserCache.set(user);
 
+    console.log("otp: ", otp);
+
+    // Send OTP email
     // await sendOTPEmail(user.email, otp);
 
-    const accessToken = Auth.createLongAccessToken(user.uuid);
-
-    return { access_token: accessToken, user: toClientUser(user) };
+    return {
+      success: true,
+      is_new_user: isNewUser,
+      email: user.email,
+    };
   });
 
-  // POST /auth/login
-  fastify.post("/login", async (request) => {
-    const body = loginSchema.parse(request.body);
+  // POST /auth/verify-otp
+  // Verify OTP and optionally collect name for new users
+  fastify.post("/verify-otp", async (request) => {
+    const body = verifyOtpSchema.parse(request.body);
 
     const user = await db.query.users.findFirst({
       where: eq(users.email, body.email.toLowerCase()),
     });
 
     if (!user) {
-      return Errors.badRequest("Invalid credentials");
+      return Errors.notFound("User not found");
     }
 
-    if (!Auth.isEmailAuth(user.auth_method)) {
-      return Errors.badRequest(
-        "Please sign in with your original sign in method",
-      );
+    if (body.otp !== user.auth_otp) {
+      return Errors.badRequest("Incorrect code. Please try again.");
     }
 
-    if (!user.password) {
-      return Errors.badRequest("Invalid credentials");
+    // Update user with confirmed email and optional name
+    const updates: any = {
+      email_confirmed: true,
+    };
+
+    // If new user and name provided, update it
+    if (body.first_name) {
+      updates.first_name = capitalise(body.first_name);
+    }
+    if (body.last_name) {
+      updates.last_name = capitalise(body.last_name);
     }
 
-    const validPassword = await Auth.comparePassword(
-      body.password,
-      user.password,
-    );
+    const [updated] = await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.uuid, user.uuid))
+      .returning();
 
-    if (!validPassword) {
-      return Errors.badRequest("Invalid credentials");
+    if (!updated) {
+      return Errors.internal("Failed to verify code");
     }
 
-    UserCache.set(user);
+    UserCache.set(updated);
 
-    const accessToken = Auth.createLongAccessToken(user.uuid);
+    // Return long-lived access token
+    const accessToken = Auth.createLongAccessToken(updated.uuid);
 
-    return { access_token: accessToken, user: toClientUser(user) };
+    return {
+      access_token: accessToken,
+      user: toClientUser(updated),
+    };
+  });
+
+  // POST /auth/resend-otp
+  // Resend OTP using email
+  fastify.post("/resend-otp", async (request) => {
+    const { email } = request.body as { email: string };
+
+    const user = await db.query.users.findFirst({
+      where: eq(users.email, email.toLowerCase()),
+    });
+
+    if (!user) {
+      return Errors.notFound("User not found");
+    }
+
+    const otp = Auth.createOTP();
+
+    const [updated] = await db
+      .update(users)
+      .set({ auth_otp: otp })
+      .where(eq(users.uuid, user.uuid))
+      .returning();
+
+    if (!updated) {
+      return Errors.internal("Failed to resend code");
+    }
+
+    UserCache.set(updated);
+
+    // await sendOTPEmail(user.email, otp);
+
+    return { success: true };
   });
 
   // POST /auth/google
@@ -125,16 +188,15 @@ export async function authRoutes(fastify: FastifyInstance) {
       where: eq(users.email, googleUser.email.toLowerCase()),
     });
 
-    let isNewUser = false;
-
     if (user) {
+      // Existing user - check they're using Google auth
       if (!Auth.isGoogleAuth(user.auth_method)) {
         return Errors.badRequest(
-          "Please sign in with your original sign in method",
+          `This email is registered with ${user.auth_method === AUTH_METHODS.EMAIL ? "Email" : "Apple"}. Please use that sign-in method instead.`,
         );
       }
     } else {
-      isNewUser = true;
+      // New user - create account
       [user] = await db
         .insert(users)
         .values({
@@ -143,13 +205,12 @@ export async function authRoutes(fastify: FastifyInstance) {
           email: googleUser.email.toLowerCase(),
           avatar: googleUser.picture,
           auth_method: AUTH_METHODS.GOOGLE,
-          email_confirmed: true,
         })
         .returning();
     }
 
     if (!user) {
-      return Errors.internal("Failed to create user");
+      return Errors.internal("Failed to authenticate with Google");
     }
 
     UserCache.set(user);
@@ -169,16 +230,15 @@ export async function authRoutes(fastify: FastifyInstance) {
       where: eq(users.email, appleUser.email.toLowerCase()),
     });
 
-    let isNewUser = false;
-
     if (user) {
+      // Existing user - check they're using Apple auth
       if (!Auth.isAppleAuth(user.auth_method)) {
         return Errors.badRequest(
-          "Please sign in with your original sign in method",
+          `This email is registered with ${user.auth_method === AUTH_METHODS.EMAIL ? "Email" : "Google"}. Please use that sign-in method instead.`,
         );
       }
     } else {
-      isNewUser = true;
+      // New user - create account
       [user] = await db
         .insert(users)
         .values({
@@ -186,13 +246,12 @@ export async function authRoutes(fastify: FastifyInstance) {
           last_name: body.family_name ? capitalise(body.family_name) : "",
           email: appleUser.email.toLowerCase(),
           auth_method: AUTH_METHODS.APPLE,
-          email_confirmed: true,
         })
         .returning();
     }
 
     if (!user) {
-      return Errors.internal("Failed to create user");
+      return Errors.internal("Failed to authenticate with Apple");
     }
 
     UserCache.set(user);
@@ -200,120 +259,6 @@ export async function authRoutes(fastify: FastifyInstance) {
     const accessToken = Auth.createLongAccessToken(user.uuid);
 
     return { access_token: accessToken, user: toClientUser(user) };
-  });
-
-  // POST /auth/confirm-email
-  fastify.post(
-    "/confirm-email",
-    { preHandler: [authenticate] },
-    async (request) => {
-      const body = confirmEmailSchema.parse(request.body);
-      const user = request.user!;
-
-      if (body.otp !== user.auth_otp) {
-        return Errors.badRequest("Incorrect OTP, please try again");
-      }
-
-      const [updated] = await db
-        .update(users)
-        .set({ email_confirmed: true })
-        .where(eq(users.uuid, user.uuid))
-        .returning();
-
-      if (!updated) {
-        return Errors.internal("Failed to confirm email address");
-      }
-
-      UserCache.set(updated);
-
-      return { success: true };
-    },
-  );
-
-  // POST /auth/resend-otp
-  fastify.post(
-    "/resend-otp",
-    { preHandler: [authenticate] },
-    async (request) => {
-      const user = request.user!;
-      const otp = Auth.createOTP();
-
-      const [updated] = await db
-        .update(users)
-        .set({ auth_otp: otp })
-        .where(eq(users.uuid, user.uuid))
-        .returning();
-
-      if (!updated) {
-        return Errors.internal("Failed to update users OTP");
-      }
-
-      UserCache.set(updated);
-
-      // await sendOTPEmail(user.email, otp);
-
-      return { success: true };
-    },
-  );
-
-  // POST /auth/forgot-password
-  fastify.post("/forgot-password", async (request) => {
-    const body = forgotPasswordSchema.parse(request.body);
-
-    const user = await db.query.users.findFirst({
-      where: eq(users.email, body.email.toLowerCase()),
-    });
-
-    if (!user) {
-      return Errors.badRequest("No user found with this email");
-    }
-
-    if (!Auth.isEmailAuth(user.auth_method)) {
-      return Errors.badRequest("This account uses social sign in");
-    }
-
-    const token = Auth.createResetToken(user.email);
-
-    // await sendPasswordResetEmail(user.email, token);
-
-    return { success: true };
-  });
-
-  // POST /auth/reset-password/:token
-  fastify.post("/reset-password/:token", async (request) => {
-    const { token } = request.params as { token: string };
-    const body = changePasswordSchema.parse(request.body);
-
-    let decoded;
-    try {
-      decoded = Auth.verifyToken(token) as unknown as { email: string };
-    } catch {
-      return Errors.badRequest("Token expired");
-    }
-
-    const user = await db.query.users.findFirst({
-      where: eq(users.email, decoded.email),
-    });
-
-    if (!user) {
-      return Errors.badRequest("User not found");
-    }
-
-    const hashedPassword = await Auth.hashPassword(body.password);
-
-    const [updated] = await db
-      .update(users)
-      .set({ password: hashedPassword })
-      .where(eq(users.uuid, user.uuid))
-      .returning();
-
-    if (!updated) {
-      return Errors.internal("Failed to reset password");
-    }
-
-    UserCache.set(updated);
-
-    return { success: true };
   });
 
   // POST /auth/push-token
@@ -324,7 +269,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       const { token } = pushTokenSchema.parse(request.body);
       const user = request.user!;
 
-      // Clear from other users
+      // Clear from other users (token can only belong to one user)
       await db.delete(push_tokens).where(eq(push_tokens.token, token));
 
       // Add to current user
@@ -357,7 +302,10 @@ export async function authRoutes(fastify: FastifyInstance) {
   fastify.delete("/delete", { preHandler: [authenticate] }, async (request) => {
     const user = request.user!;
 
+    // Delete associated data
     await db.delete(push_tokens).where(eq(push_tokens.user_uuid, user.uuid));
+    // TODO: Delete sessions, purchases, etc.
+
     await db.delete(users).where(eq(users.uuid, user.uuid));
     UserCache.remove(user.uuid);
 

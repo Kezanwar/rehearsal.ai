@@ -1,52 +1,77 @@
 @baseUrl = http://localhost:8000
 @token = <TOKEN>
 @email = kez@test.com
-@password = password123
+@otp = 123456
 
-### Initialize
-GET {{baseUrl}}/auth/initialize
+### Initialize (requires auth)
+GET {{baseUrl}}/api/auth/initialize
 x-auth-token: {{token}}
 
-### Register
-POST {{baseUrl}}/auth/register
-Content-Type: application/json
-
-{
-  "first_name": "Kez",
-  "last_name": "Test",
-  "email": "{{email}}",
-  "password": "{{password}}"
-}
-
-### Login
-POST {{baseUrl}}/auth/login
-Content-Type: application/json
-
-{
-  "email": "{{email}}",
-  "password": "{{password}}"
-}
-
-### Resend OTP
-POST {{baseUrl}}/auth/resend-otp
-x-auth-token: {{token}}
-
-### Confirm Email
-POST {{baseUrl}}/auth/confirm-email
-x-auth-token: {{token}}
-Content-Type: application/json
-
-{
-  "otp": "123456"
-}
-
-### Forgot Password
-POST {{baseUrl}}/auth/forgot-password
+### Email Auth - Step 1: Send OTP
+# Works for both new and existing users
+POST {{baseUrl}}/api/auth/email
 Content-Type: application/json
 
 {
   "email": "{{email}}"
 }
 
-### Reset Password
-POST {{baseUrl}}/auth/reset-password/RESET_TOKE
+### Email Auth - Step 2: Verify OTP
+# For new users, include first_name and last_name
+POST {{baseUrl}}/api/auth/verify-otp
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "otp": "{{otp}}",
+  "first_name": "Kez",
+  "last_name": "Test"
+}
+
+### Resend OTP
+POST {{baseUrl}}/api/auth/resend-otp
+Content-Type: application/json
+
+{
+  "email": "{{email}}"
+}
+
+### Google Auth
+POST {{baseUrl}}/api/auth/google
+Content-Type: application/json
+
+{
+  "token": "GOOGLE_ACCESS_TOKEN"
+}
+
+### Apple Auth
+POST {{baseUrl}}/api/auth/apple
+Content-Type: application/json
+
+{
+  "identity_token": "APPLE_IDENTITY_TOKEN",
+  "given_name": "Kez",
+  "family_name": "Test"
+}
+
+### Add Push Token (requires auth)
+POST {{baseUrl}}/api/auth/push-token
+x-auth-token: {{token}}
+Content-Type: application/json
+
+{
+  "token": "EXPO_PUSH_TOKEN"
+}
+
+### Delete Push Token (requires auth)
+DELETE {{baseUrl}}/api/auth/push-token
+x-auth-token: {{token}}
+Content-Type: application/json
+
+{
+  "token": "EXPO_PUSH_TOKEN"
+}
+
+### Delete Account (requires auth)
+DELETE {{baseUrl}}/api/auth/delete
+x-auth-token: {{token}}
