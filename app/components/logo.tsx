@@ -34,14 +34,12 @@ export function Logo({ size = "lg", showText = true }: LogoProps) {
       </View>
       {showText && (
         <View className="flex-row">
-          <Text className={`${text} font-semi-bold tracking-tight`}>
-            rehearsal
-          </Text>
+          <Text className={`${text} font-bold tracking-tight`}>Rehearsal</Text>
           <Text
-            className={`${text} font-semi-bold tracking-tight`}
+            className={`${text} font-bold tracking-tight`}
             style={{ color: ACCENT }}
           >
-            .ai
+            .AI
           </Text>
         </View>
       )}

@@ -70,7 +70,6 @@ export default function AuthHomeScreen() {
           />
           <Text className="font-semi-bold">Continue with Apple</Text>
         </Button>
-
         <Button
           variant="outline"
           className="h-12 flex-row gap-3"

@@ -4,8 +4,8 @@ export default function AuthLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
-      <Stack.Screen name="AUTH_EMAIL" />
-      <Stack.Screen name="AUTH_OTP" />
+      <Stack.Screen name="email" />
+      <Stack.Screen name="otp" />
     </Stack>
   );
 }

@@ -96,7 +96,7 @@ export async function authRoutes(fastify: FastifyInstance) {
   });
 
   // POST /auth/verify-otp
-  // Verify OTP and optionally collect name for new users
+  // Verify OTP
   fastify.post("/verify-otp", async (request) => {
     const body = verifyOtpSchema.parse(request.body);
 
@@ -108,26 +108,16 @@ export async function authRoutes(fastify: FastifyInstance) {
       return Errors.notFound("User not found");
     }
 
+    console.log(user, body.otp);
+
     if (body.otp !== user.auth_otp) {
       return Errors.badRequest("Incorrect code. Please try again.");
     }
 
-    // Update user with confirmed email and optional name
-    const updates: any = {
-      email_confirmed: true,
-    };
-
-    // If new user and name provided, update it
-    if (body.first_name) {
-      updates.first_name = capitalise(body.first_name);
-    }
-    if (body.last_name) {
-      updates.last_name = capitalise(body.last_name);
-    }
-
+    // Update user with confirmed email
     const [updated] = await db
       .update(users)
-      .set(updates)
+      .set({ email_confirmed: true })
       .where(eq(users.uuid, user.uuid))
       .returning();
 

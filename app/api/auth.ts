@@ -1,28 +1,17 @@
 import { api, setSession, endSession } from "./api";
 
 // Request types
-export interface LoginRequest {
+export interface EmailAuthRequest {
   email: string;
-  password: string;
 }
 
-export interface RegisterRequest {
+export interface VerifyOtpRequest {
   email: string;
-  password: string;
-  first_name: string;
-  last_name: string;
-}
-
-export interface ConfirmEmailRequest {
   otp: string;
 }
 
-export interface ForgotPasswordRequest {
+export interface ResendOtpRequest {
   email: string;
-}
-
-export interface ResetPasswordRequest {
-  password: string;
 }
 
 export interface GoogleAuthRequest {
@@ -58,76 +47,71 @@ export interface AuthResponse {
   access_token: string;
 }
 
+export interface EmailAuthResponse {
+  success: boolean;
+  is_new_user: boolean;
+  email: string;
+}
+
 // API calls
 export async function initialize(): Promise<{ user: User }> {
-  return api.get("auth/initialize");
+  return api.get("api/auth/initialize");
 }
 
-export async function login(data: LoginRequest): Promise<AuthResponse> {
-  const response = await api.post<AuthResponse>("auth/login", { json: data });
-  await setSession(response.access_token);
-  return response;
+export async function sendEmailOTP(
+  data: EmailAuthRequest,
+): Promise<EmailAuthResponse> {
+  return api.post<EmailAuthResponse>("api/auth/email", { json: data });
 }
 
-export async function register(data: RegisterRequest): Promise<AuthResponse> {
-  const response = await api.post<AuthResponse>("auth/register", {
+export async function verifyOTP(
+  data: VerifyOtpRequest,
+): Promise<AuthResponse> {
+  const response = await api.post<AuthResponse>("api/auth/verify-otp", {
     json: data,
   });
   await setSession(response.access_token);
   return response;
 }
 
+export async function resendOTP(
+  data: ResendOtpRequest,
+): Promise<{ success: boolean }> {
+  return api.post("api/auth/resend-otp", { json: data });
+}
+
 export async function googleAuth(
   data: GoogleAuthRequest,
 ): Promise<AuthResponse> {
-  const response = await api.post<AuthResponse>("auth/google", { json: data });
+  const response = await api.post<AuthResponse>("api/auth/google", {
+    json: data,
+  });
   await setSession(response.access_token);
   return response;
 }
 
 export async function appleAuth(data: AppleAuthRequest): Promise<AuthResponse> {
-  const response = await api.post<AuthResponse>("auth/apple", { json: data });
+  const response = await api.post<AuthResponse>("api/auth/apple", {
+    json: data,
+  });
   await setSession(response.access_token);
   return response;
-}
-
-export async function confirmEmail(
-  data: ConfirmEmailRequest,
-): Promise<{ success: boolean }> {
-  return api.post("auth/confirm-email", { json: data });
-}
-
-export async function resendOTP(): Promise<{ success: boolean }> {
-  return api.post("auth/resend-otp");
-}
-
-export async function forgotPassword(
-  data: ForgotPasswordRequest,
-): Promise<{ success: boolean }> {
-  return api.post("auth/forgot-password", { json: data });
-}
-
-export async function resetPassword(
-  token: string,
-  data: ResetPasswordRequest,
-): Promise<{ success: boolean }> {
-  return api.post(`auth/reset-password/${token}`, { json: data });
 }
 
 export async function registerPushToken(
   data: PushTokenRequest,
 ): Promise<{ success: boolean }> {
-  return api.post("auth/push-token", { json: data });
+  return api.post("api/auth/push-token", { json: data });
 }
 
 export async function removePushToken(
   data: PushTokenRequest,
 ): Promise<{ success: boolean }> {
-  return api.delete("auth/push-token", { json: data });
+  return api.delete("api/auth/push-token", { json: data });
 }
 
 export async function deleteAccount(): Promise<{ success: boolean }> {
-  const response = await api.delete<{ success: boolean }>("auth/delete");
+  const response = await api.delete<{ success: boolean }>("api/auth/delete");
   await endSession();
   return response;
 }

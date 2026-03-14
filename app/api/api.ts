@@ -3,7 +3,7 @@ import * as SecureStore from "expo-secure-store";
 import { useAuthStore } from "@/stores/auth";
 
 const TOKEN_KEY = "auth-token";
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
 const APP_VERSION = "1.0.0"; // TODO: Get from app.json or expo-constants
 
 const CODES = {
